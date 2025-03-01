@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "builtIn.h"
+#include "sys/wait.h"
 
 int exitWish(char *arg[]) {
     if (arg[1] == NULL) {
@@ -69,6 +70,7 @@ char *external(char *arg[], char **pathList) {
         if (access(pathListCopy[i], X_OK) != -1) {
             int parent = getpid();
             fork();
+            wait(NULL);
             program = pathListCopy[i];
             if (getpid() != parent) {
                 execv(program, arg);
