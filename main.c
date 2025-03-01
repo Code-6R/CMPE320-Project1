@@ -51,8 +51,5 @@ int main(int argc, char *argv[]) {
         }
       lpCnt++;
     }
-    free(pathList);
-    free(line);
-    fclose(stream);
 }
 
