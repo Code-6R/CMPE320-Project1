@@ -65,7 +65,26 @@ char **path(char *arg[], int argNum, char **pathList) {
     return pathList;
 }
 
+int redirect(char *arg[]) {
+    int i = 0;
+    int dirSym = 0;
+    while (arg[i] != NULL) {
+        if (strcmp(arg[i], ">") == 0) {
+            dirSym = i;
+        }
+        i++;
+    }
+    if (arg[dirSym + 1] != NULL && arg[dirSym + 2] == NULL) {
+       FILE *output = freopen(arg[dirSym + 1], "a+", stdout);
+    }
+    else if (dirSym != 0) {
+        fprintf(stderr, "An error has occurred\n");
+    }
+    return dirSym;
+}
+
 char *external(char *arg[], char **pathList) {
+    int dirSym = redirect(arg);
     int i = 0;
     char *pathListCopy[100];
     char *program = NULL;
@@ -79,6 +98,9 @@ char *external(char *arg[], char **pathList) {
             wait(NULL);
             program = pathListCopy[i];
             if (getpid() != parent) {
+                if (dirSym != 0) {
+                    strsep(arg, " >");
+                }
                 execv(program, arg);
             }
         }

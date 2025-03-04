@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
             pathList = path(arg, argNum, pathList);
         }
         // printPath(pathList, argNum); // testing if pathList updates properly
-        if (strcmp(arg[0], "cd") !=0 && strcmp(arg[0], "path") != 0
+        if (strcmp(arg[0], "cd") != 0 && strcmp(arg[0], "path") != 0
             && strcmp(arg[0], "exit") != 0) {
             char *executable = external(arg, pathList);
         }
