@@ -16,7 +16,7 @@ int exitWish(char *arg[]) {
         exit(EXIT_SUCCESS);
     } else {
         fprintf(stderr, "An error has occurred\n");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 }
 
@@ -65,29 +65,34 @@ char **path(char *arg[], int argNum, char **pathList) {
     return pathList;
 }
 
-int redirect(char *arg[]) {
+sym_t redirect(char *arg[]) {
+    sym_t sym;
     int i = 0;
-    int dirSym = 0;
+    sym.dirSym = 0;
+    sym.symCnt = 0;
     while (arg[i] != NULL) {
         if (strcmp(arg[i], ">") == 0) {
-            dirSym = i;
+            sym.dirSym = i;
+
+            sym.symCnt++;
         }
         i++;
     }
-    if (arg[dirSym + 1] != NULL && arg[dirSym + 2] == NULL) {
-       FILE *output = freopen(arg[dirSym + 1], "a+", stdout);
+    if (sym.dirSym != 0 && arg[sym.dirSym + 1] != NULL
+        && arg[sym.dirSym + 2] == NULL && sym.symCnt == 1) {
+       freopen(arg[sym.dirSym + 1], "w+", stdout);
     }
-    else if (dirSym != 0) {
+    else if (sym.dirSym != 0 || sym.symCnt > 1) {
         fprintf(stderr, "An error has occurred\n");
     }
-    return dirSym;
+    return sym;
 }
 
 char *external(char *arg[], char **pathList) {
-    int dirSym = redirect(arg);
     int i = 0;
     char *pathListCopy[100];
     char *program = NULL;
+    char *argCpy[100] = {NULL};
     while (pathList[i] != NULL && pathList[i][0] != '\0') {
         pathListCopy[i] = strdup(pathList[i]);
         strcat(pathListCopy[i], "/");
@@ -97,11 +102,18 @@ char *external(char *arg[], char **pathList) {
             fork();
             wait(NULL);
             program = pathListCopy[i];
+            int j = 0;
+            while (arg[j] != NULL && strcmp(arg[j], ">") != 0) {
+                argCpy[j] = arg[j];
+                j++;
+            }
             if (getpid() != parent) {
-                if (dirSym != 0) {
-                    strsep(arg, " >");
+                sym_t sym = redirect(arg);
+                if (sym.dirSym != 0 && arg[sym.dirSym + 1] != NULL
+                    && arg[sym.dirSym + 2] == NULL &&
+                    sym.symCnt == 1|| sym.dirSym == 0) {
+                    execv(program, argCpy);
                 }
-                execv(program, arg);
             }
         }
         i++;
