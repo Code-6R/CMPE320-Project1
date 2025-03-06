@@ -65,21 +65,27 @@ char **path(char *arg[], int argNum, char **pathList) {
     return pathList;
 }
 
-sym_t redirect(char *arg[]) {
+sym_t redirect(char *arg[], char *argCpy[]) {
     sym_t sym;
     int i = 0;
+    int j = 0;
     sym.dirSym = 0;
     sym.symCnt = 0;
+    sym.valid = 0;
     while (arg[i] != NULL) {
         if (strcmp(arg[i], ">") == 0) {
             sym.dirSym = i;
-
             sym.symCnt++;
         }
         i++;
     }
+    while (arg[j] != NULL && strcmp(arg[j], ">") != 0) {
+        argCpy[j] = arg[j];
+        j++;
+    }
     if (sym.dirSym != 0 && arg[sym.dirSym + 1] != NULL
         && arg[sym.dirSym + 2] == NULL && sym.symCnt == 1) {
+        sym.valid = 1;
        freopen(arg[sym.dirSym + 1], "w+", stdout);
     }
     else if (sym.dirSym != 0 || sym.symCnt > 1) {
@@ -88,11 +94,18 @@ sym_t redirect(char *arg[]) {
     return sym;
 }
 
+void run(char *program, char *arg[]) {
+    char *argCpy[100] = {NULL};
+    sym_t sym = redirect(arg, argCpy);
+    if (sym.valid == 1 || sym.dirSym == 0) {
+        execv(program, argCpy);
+        }
+}
+
 char *external(char *arg[], char **pathList) {
     int i = 0;
     char *pathListCopy[100];
     char *program = NULL;
-    char *argCpy[100] = {NULL};
     while (pathList[i] != NULL && pathList[i][0] != '\0') {
         pathListCopy[i] = strdup(pathList[i]);
         strcat(pathListCopy[i], "/");
@@ -102,18 +115,8 @@ char *external(char *arg[], char **pathList) {
             fork();
             wait(NULL);
             program = pathListCopy[i];
-            int j = 0;
-            while (arg[j] != NULL && strcmp(arg[j], ">") != 0) {
-                argCpy[j] = arg[j];
-                j++;
-            }
             if (getpid() != parent) {
-                sym_t sym = redirect(arg);
-                if (sym.dirSym != 0 && arg[sym.dirSym + 1] != NULL
-                    && arg[sym.dirSym + 2] == NULL &&
-                    sym.symCnt == 1|| sym.dirSym == 0) {
-                    execv(program, argCpy);
-                }
+                run(program, arg);
             }
         }
         i++;
