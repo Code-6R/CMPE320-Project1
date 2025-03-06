@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "builtIn.h"
 #include "sys/wait.h"
+#include <fcntl.h>
 
 char **pathlist, *line;
 FILE *stream;
@@ -69,13 +70,26 @@ sym_t redirect(char *arg[], char *argCpy[]) {
     sym_t sym;
     int i = 0;
     int j = 0;
+    int cnt = 0;
     sym.dirSym = 0;
     sym.symCnt = 0;
     sym.valid = 0;
+    char *dest = {NULL};
     while (arg[i] != NULL) {
         if (strcmp(arg[i], ">") == 0) {
             sym.dirSym = i;
             sym.symCnt++;
+            if (sym.symCnt == 1) {
+                dest = arg[sym.dirSym + 1];
+            }
+        }
+        else if (arg[i + 1] != NULL || sym.dirSym == 0) {
+            dest = strstr(arg[i], ">");
+            if (dest != NULL && i > 0) {
+                strncpy(arg[i], arg[i], sizeof(arg[i]) - sizeof(dest));
+                cnt++;
+            }
+            strsep(&dest, ">");
         }
         i++;
     }
@@ -84,9 +98,10 @@ sym_t redirect(char *arg[], char *argCpy[]) {
         j++;
     }
     if (sym.dirSym != 0 && arg[sym.dirSym + 1] != NULL
-        && arg[sym.dirSym + 2] == NULL && sym.symCnt == 1) {
+        && arg[sym.dirSym + 2] == NULL && sym.symCnt == 1 || cnt == 1) {
         sym.valid = 1;
-       freopen(arg[sym.dirSym + 1], "w+", stdout);
+        int output = open(dest, O_CREAT | O_TRUNC | O_WRONLY);
+        dup2(output, fileno(stdout));
     }
     else if (sym.dirSym != 0 || sym.symCnt > 1) {
         fprintf(stderr, "An error has occurred\n");
@@ -117,6 +132,7 @@ char *external(char *arg[], char **pathList) {
             program = pathListCopy[i];
             if (getpid() != parent) {
                 run(program, arg);
+                exit(EXIT_SUCCESS);
             }
         }
         i++;

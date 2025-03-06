@@ -23,6 +23,10 @@ int main(int argc, char *argv[]) {
     if (argc == 2) {
         stream = fopen(argv[1], "r");
     }
+    if (stream == NULL) {
+        fprintf(stderr, "An error has occurred\n");
+        exit(EXIT_FAILURE);
+    }
     while (getline(&line, &size, stream) != -1) {
       //  printf("line%d: %s", i, line);
         if (argc == 1) {
