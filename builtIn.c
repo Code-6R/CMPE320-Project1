@@ -62,14 +62,12 @@ char **path(char *arg[], int argNum, char **pathList) {
     if (argNum == 1) {
         pathList[0] = NULL;
     }
-    // printPath(pathList, argNum); // testing if pathList updates properly
     return pathList;
 }
 
 sym_t redirect(char *arg[], char *argCpy[]) {
     sym_t sym;
     int i = 0;
-    int j = 0;
     int cnt = 0;
     sym.dirSym = 0;
     sym.symCnt = 0;
@@ -79,26 +77,23 @@ sym_t redirect(char *arg[], char *argCpy[]) {
         if (strcmp(arg[i], ">") == 0) {
             sym.dirSym = i;
             sym.symCnt++;
-            if (sym.symCnt == 1) {
-                dest = arg[sym.dirSym + 1];
-            }
+            dest = arg[sym.dirSym + 1];
         }
-        else if (arg[i + 1] != NULL || sym.dirSym == 0) {
-            dest = strstr(arg[i], ">");
+        else if (sym.dirSym == 0) {
+            dest = strchr(arg[i], '>');
             if (dest != NULL && i > 0) {
-                strncpy(arg[i], arg[i], sizeof(arg[i]) - sizeof(dest));
+                arg[i][*dest] = '\0';
                 cnt++;
             }
             strsep(&dest, ">");
         }
+        if (strcmp(arg[i], ">") != 0) {
+            argCpy[i] = arg[i];
+        }
         i++;
     }
-    while (arg[j] != NULL && strcmp(arg[j], ">") != 0) {
-        argCpy[j] = arg[j];
-        j++;
-    }
-    if (sym.dirSym != 0 && arg[sym.dirSym + 1] != NULL
-        && arg[sym.dirSym + 2] == NULL && sym.symCnt == 1 || cnt == 1) {
+    if (sym.symCnt == 1 && arg[sym.dirSym + 1] != NULL
+        && arg[sym.dirSym + 2] == NULL || cnt == 1) {
         sym.valid = 1;
         int output = open(dest, O_CREAT | O_TRUNC | O_WRONLY);
         dup2(output, fileno(stdout));
@@ -114,10 +109,10 @@ void run(char *program, char *arg[]) {
     sym_t sym = redirect(arg, argCpy);
     if (sym.valid == 1 || sym.dirSym == 0) {
         execv(program, argCpy);
-        }
+    }
 }
 
-char *external(char *arg[], char **pathList) {
+int *external(char *arg[], char **pathList) {
     int i = 0;
     char *pathListCopy[100];
     char *program = NULL;
@@ -140,5 +135,5 @@ char *external(char *arg[], char **pathList) {
     if (program == NULL) {
         fprintf(stderr, "An error has occurred\n");
     }
-    return program;
+    return 0;
 }
