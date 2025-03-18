@@ -9,6 +9,10 @@
 char **pathlist, *line;
 FILE *stream;
 
+void printErr() {
+    fprintf(stderr, "An error has occurred\n");
+}
+
 int exitWish(char *arg[]) {
     if (arg[1] == NULL) {
         free(pathlist);
@@ -16,7 +20,7 @@ int exitWish(char *arg[]) {
         free(stream);
         exit(EXIT_SUCCESS);
     } else {
-        fprintf(stderr, "An error has occurred\n");
+        printErr();
         return EXIT_FAILURE;
     }
 }
@@ -24,7 +28,7 @@ int exitWish(char *arg[]) {
 int cd(char *arg[]) {
     char dir[1024] = {0};
     if (arg[2] != NULL || arg[1] == NULL) {
-        fprintf(stderr, "An error has occurred\n");
+        printErr();
     }
     if (arg[1] != NULL) {
         chdir(arg[1]);
@@ -65,6 +69,17 @@ char **path(char *arg[], int argNum, char **pathList) {
     return pathList;
 }
 
+bool whiteSpace(char c) {
+    char *delims = COMMAND_DELIM;
+    size_t len = strlen(COMMAND_DELIM);
+    for (int i = 0; i < len; i++) {
+        if (c == delims[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 sym_t redirect(char *arg[], char *argCpy[]) {
     sym_t sym;
     int i = 0;
@@ -90,6 +105,9 @@ sym_t redirect(char *arg[], char *argCpy[]) {
         if (strcmp(arg[i], ">") != 0) {
             argCpy[i] = arg[i];
         }
+        if (strcmp(arg[i], "") == 0 && cnt == 1) {
+            argCpy[i] = NULL;
+        }
         i++;
     }
     if (sym.symCnt == 1 && arg[sym.dirSym + 1] != NULL
@@ -99,7 +117,7 @@ sym_t redirect(char *arg[], char *argCpy[]) {
         dup2(output, fileno(stdout));
     }
     else if (sym.dirSym != 0 || sym.symCnt > 1) {
-        fprintf(stderr, "An error has occurred\n");
+        printErr();
     }
     return sym;
 }
@@ -133,7 +151,7 @@ int *external(char *arg[], char **pathList) {
         i++;
     }
     if (program == NULL) {
-        fprintf(stderr, "An error has occurred\n");
+        printErr();
     }
     return 0;
 }

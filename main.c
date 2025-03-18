@@ -31,13 +31,15 @@ int main(int argc, char *argv[]) {
         if (argc == 1) {
             printf("wish> ");
         }
+        while (strlen(line) && whiteSpace(*line)) {
+            line++;
+        }
+        char *end = line + strlen(line) - 1;
+        while (end > line && whiteSpace(*end)) end--;
+        *(end + 1) = '\0';
         int j = 0;
-        line[strlen(line) - 1] = '\0';
         char *arg[sizeof(&line)];
         while ((arg[j] = strsep(&line, " \t")) != NULL) {
-            if (strcmp(arg[j - 1], "") == 0 && j > 0) {
-                arg[j - 1] = arg[j];
-            }
             j++;
         }
         int argNum = j;
