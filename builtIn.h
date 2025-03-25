@@ -8,7 +8,7 @@
 typedef struct {
     int symCnt;
     int dirSym;
-    int valid;
+    bool valid;
 } sym_t;
 
 int cd(char *arg[]);
