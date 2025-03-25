@@ -23,15 +23,23 @@ int main(int argc, char *argv[]) {
     if (argc == 2) {
         stream = fopen(argv[1], "r");
     }
+    if (stream == NULL) {
+        fprintf(stderr, "An error has occurred\n");
+        exit(EXIT_FAILURE);
+    }
     while (getline(&line, &size, stream) != -1) {
-      //  printf("line%d: %s", i, line);
         if (argc == 1) {
             printf("wish> ");
         }
+        while (strlen(line) && whiteSpace(*line)) {
+            line++;
+        }
+        char *end = line + strlen(line) - 1;
+        while (end > line && whiteSpace(*end)) end--;
+        *(end + 1) = '\0';
         int j = 0;
-        line[strlen(line) - 1] = '\0';
         char *arg[sizeof(&line)];
-        while ((arg[j] = strsep(&line, " ")) != NULL) {
+        while ((arg[j] = strsep(&line, " \t")) != NULL) {
             j++;
         }
         int argNum = j;
@@ -44,15 +52,11 @@ int main(int argc, char *argv[]) {
         if (strcmp(arg[0], "path") == 0) {
             pathList = path(arg, argNum, pathList);
         }
-        // printPath(pathList, argNum); // testing if pathList updates properly
-        if (strcmp(arg[0], "cd") !=0 && strcmp(arg[0], "path") != 0
+        if (strcmp(arg[0], "cd") != 0 && strcmp(arg[0], "path") != 0
             && strcmp(arg[0], "exit") != 0) {
-            char *executable = external(arg, pathList);
-        }
-      lpCnt++;
+            external(arg, pathList);
+            }
+        lpCnt++;
     }
-    free(pathList);
-    free(line);
-    fclose(stream);
 }
 
