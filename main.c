@@ -38,23 +38,43 @@ int main(int argc, char *argv[]) {
         while (end > line && whiteSpace(*end)) end--;
         *(end + 1) = '\0';
         int j = 0;
-        char *arg[sizeof(&line)];
+        char *arg[sizeof(&line) + 1] = {NULL};
+        char **argArr[100] = {NULL}; // probably change the 100 later
+        int arrCnt = 0;
         while ((arg[j] = strsep(&line, " \t")) != NULL) {
+            if (strcmp(arg[j], "&") == 0 && j != 0) {
+                arg[j] = NULL;
+                argArr[arrCnt] = &arg[j + 1];
+                arrCnt++;
+            }
+            if (arrCnt == 0) {
+                argArr[0] = &arg[0];
+                arrCnt = 1;
+            }
             j++;
         }
-        int argNum = j;
-        if (strcmp(arg[0], "exit") == 0) {
-            exitWish(arg);
-        }
-        if (strcmp(arg[0], "cd") == 0) {
-            cd(arg);
-        }
-        if (strcmp(arg[0], "path") == 0) {
-            pathList = path(arg, argNum, pathList);
-        }
-        if (strcmp(arg[0], "cd") != 0 && strcmp(arg[0], "path") != 0
-            && strcmp(arg[0], "exit") != 0) {
-            external(arg, pathList);
+        int arrIndex = 0;
+        while (argArr[arrIndex] != NULL) {
+            int l = 0;
+            if (argArr[arrIndex][0] != NULL) {
+                int argNum = j;
+                if (strcmp(argArr[arrIndex][0], "exit") == 0) {
+                    exitWish(argArr[arrIndex]);
+                }
+                if (strcmp(argArr[arrIndex][0], "cd") == 0) {
+                    cd(argArr[arrIndex]);
+                }
+                if (strcmp(arg[0], "path") == 0) {
+                    pathList = path(argArr[arrIndex], argNum, pathList);
+                }
+                if (strcmp(argArr[arrIndex][0], "cd") != 0
+                    && strcmp(argArr[arrIndex][0], "path") != 0
+                    && strcmp(argArr[arrIndex][0], "exit") != 0
+                    && strcmp(argArr[arrIndex][0], "&") != 0) {
+                    external(argArr[arrIndex], pathList);
+                    }
+            }
+            arrIndex++;
         }
       lpCnt++;
     }
