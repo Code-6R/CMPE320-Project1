@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
+
 #include "builtIn.h"
 
 int main(int argc, char *argv[]) {
@@ -39,15 +41,33 @@ int main(int argc, char *argv[]) {
         *(end + 1) = '\0';
         int j = 0;
         char *arg[sizeof(&line) + 1] = {NULL};
+        char *argTemp[sizeof(&line) + 1] = {NULL};
         char **argArr[100] = {NULL}; // probably change the 100 later
         int arrCnt = 0;
+        char *parSym = {NULL};
         while ((arg[j] = strsep(&line, " \t")) != NULL) {
             if (strcmp(arg[j], "&") == 0 && j != 0) {
                 arg[j] = NULL;
                 argArr[arrCnt] = &arg[j + 1];
                 arrCnt++;
             }
+            int k = 0;
             if (arrCnt == 0) {
+                parSym = strchr(arg[j], '&');
+                while ((parSym = strchr(arg[j], '&')) != NULL) {
+                    argTemp[k] = strndup(arg[j], strlen(arg[j]) - strlen(parSym));
+                    arg[j][*parSym] = '\0';
+                    strsep(&parSym, "&");
+                    arg[j] = parSym;
+                    k++;
+                }
+                if (parSym == NULL && k != 0) {
+                    argTemp[k] = arg[j];
+                    for (arrCnt = 0; arrCnt <= k; arrCnt++)
+                        argArr[arrCnt] = &argTemp[arrCnt];
+                }
+            }
+            if (arrCnt == 0 && k == 0) {
                 argArr[0] = &arg[0];
                 arrCnt = 1;
             }
@@ -55,7 +75,6 @@ int main(int argc, char *argv[]) {
         }
         int arrIndex = 0;
         while (argArr[arrIndex] != NULL) {
-            int l = 0;
             if (argArr[arrIndex][0] != NULL) {
                 int argNum = j;
                 if (strcmp(argArr[arrIndex][0], "exit") == 0) {
@@ -64,7 +83,7 @@ int main(int argc, char *argv[]) {
                 if (strcmp(argArr[arrIndex][0], "cd") == 0) {
                     cd(argArr[arrIndex]);
                 }
-                if (strcmp(arg[0], "path") == 0) {
+                if (strcmp(argArr[arrIndex][0], "path") == 0) {
                     pathList = path(argArr[arrIndex], argNum, pathList);
                 }
                 if (strcmp(argArr[arrIndex][0], "cd") != 0
