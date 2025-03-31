@@ -2,9 +2,36 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "builtIn.h"
 #include <sys/wait.h>
 
-#include "builtIn.h"
+int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j) {
+    if (strcmp(arg[j], "&") == 0 && j != 0) { // used for space case
+        arg[j] = NULL;
+        argArr[arrCnt] = &arg[j + 1];
+        arrCnt++;
+    }
+    int k = 0;
+    if (arrCnt == 0) {
+        char *parSym = NULL;
+        while ((parSym = strchr(arg[j], '&')) != NULL) { // used for no space case
+            argHolder[k] = strndup(arg[j], strlen(arg[j]) - strlen(parSym));
+            strsep(&parSym, "&");
+            arg[j] = parSym;
+            k++;
+        }
+        if (parSym == NULL && k != 0) {
+            argHolder[k] = arg[j];
+            for (arrCnt = 0; arrCnt <= k; arrCnt++)
+                argArr[arrCnt] = &argHolder[arrCnt];
+        }
+    }
+    if (arrCnt == 0 && k == 0) { // used for single command case
+        argArr[0] = &arg[0];
+        arrCnt = 1;
+    }
+    return arrCnt; // I thought this was better than making it a global variable
+}
 
 int main(int argc, char *argv[]) {
     int lpCnt = 1; // set to 1 since 0 contains the
@@ -15,7 +42,7 @@ int main(int argc, char *argv[]) {
     char **pathList = malloc(sizeof(char) * 100);
     pathList[0] = "/bin";
     if (argc != 2 && argc != 1) {
-        fprintf(stderr, "An error has occurred\n");
+        printErr();
         exit(EXIT_FAILURE);
     }
     if (argc == 1) {
@@ -26,7 +53,7 @@ int main(int argc, char *argv[]) {
         stream = fopen(argv[1], "r");
     }
     if (stream == NULL) {
-        fprintf(stderr, "An error has occurred\n");
+        printErr();
         exit(EXIT_FAILURE);
     }
     while (getline(&line, &size, stream) != -1) {
@@ -41,61 +68,36 @@ int main(int argc, char *argv[]) {
         *(end + 1) = '\0';
         int j = 0;
         char *arg[sizeof(&line) + 1] = {NULL};
-        char *argTemp[sizeof(&line) + 1] = {NULL};
-        char **argArr[100] = {NULL}; // probably change the 100 later
+        char *argHolder[sizeof(&line) + 1] = {NULL};
+        char **argArr[10] = {NULL}; // probably change the 10
         int arrCnt = 0;
-        char *parSym = {NULL};
         while ((arg[j] = strsep(&line, " \t")) != NULL) {
-            if (strcmp(arg[j], "&") == 0 && j != 0) {
-                arg[j] = NULL;
-                argArr[arrCnt] = &arg[j + 1];
-                arrCnt++;
-            }
-            int k = 0;
-            if (arrCnt == 0) {
-                parSym = strchr(arg[j], '&');
-                while ((parSym = strchr(arg[j], '&')) != NULL) {
-                    argTemp[k] = strndup(arg[j], strlen(arg[j]) - strlen(parSym));
-                    arg[j][*parSym] = '\0';
-                    strsep(&parSym, "&");
-                    arg[j] = parSym;
-                    k++;
-                }
-                if (parSym == NULL && k != 0) {
-                    argTemp[k] = arg[j];
-                    for (arrCnt = 0; arrCnt <= k; arrCnt++)
-                        argArr[arrCnt] = &argTemp[arrCnt];
-                }
-            }
-            if (arrCnt == 0 && k == 0) {
-                argArr[0] = &arg[0];
-                arrCnt = 1;
-            }
+            arrCnt = parHandle(arg, argArr, arrCnt, argHolder, j);
             j++;
         }
         int arrIndex = 0;
         while (argArr[arrIndex] != NULL) {
             if (argArr[arrIndex][0] != NULL) {
+                bool isExternal = true;
                 int argNum = j;
                 if (strcmp(argArr[arrIndex][0], "exit") == 0) {
+                    isExternal = false;
                     exitWish(argArr[arrIndex]);
                 }
                 if (strcmp(argArr[arrIndex][0], "cd") == 0) {
+                    isExternal = false;
                     cd(argArr[arrIndex]);
                 }
                 if (strcmp(argArr[arrIndex][0], "path") == 0) {
+                    isExternal = false;
                     pathList = path(argArr[arrIndex], argNum, pathList);
                 }
-                if (strcmp(argArr[arrIndex][0], "cd") != 0
-                    && strcmp(argArr[arrIndex][0], "path") != 0
-                    && strcmp(argArr[arrIndex][0], "exit") != 0
-                    && strcmp(argArr[arrIndex][0], "&") != 0) {
+                if (isExternal == true && strcmp(argArr[arrIndex][0], "&") != 0) {
                     external(argArr[arrIndex], pathList);
-                    }
+                }
             }
             arrIndex++;
         }
-      lpCnt++;
+        lpCnt++;
     }
 }
-
