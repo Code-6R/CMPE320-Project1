@@ -41,6 +41,10 @@ int main(int argc, char *argv[]) {
     FILE *stream = NULL;
     char **pathList = malloc(sizeof(char) * 100);
     pathList[0] = "/bin";
+    pid_t pid = 1;
+    int arrCnt = 0;
+    char **argArr[10] = {NULL}; // probably change the 10
+    int j = 0;
     if (argc != 2 && argc != 1) {
         printErr();
         exit(EXIT_FAILURE);
@@ -57,47 +61,79 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     while (getline(&line, &size, stream) != -1) {
-        if (argc == 1) {
-            printf("wish> ");
+        if (pid != 0) {
+            if (argc == 1) {
+                printf("wish> ");
+            }
+            while (strlen(line) && whiteSpace(*line)) {
+                line++;
+            }
+            char *end = line + strlen(line) - 1;
+            while (end > line && whiteSpace(*end)) end--;
+            *(end + 1) = '\0';
+            j = 0;
+            char *arg[sizeof(&line) + 1] = {NULL};
+            char *argHolder[sizeof(&line) + 1] = {NULL};
+            arrCnt = 0;
+            while ((arg[j] = strsep(&line, " \t")) != NULL) {
+                arrCnt = parHandle(arg, argArr, arrCnt, argHolder, j);
+                j++;
+            }
         }
-        while (strlen(line) && whiteSpace(*line)) {
-            line++;
-        }
-        char *end = line + strlen(line) - 1;
-        while (end > line && whiteSpace(*end)) end--;
-        *(end + 1) = '\0';
-        int j = 0;
-        char *arg[sizeof(&line) + 1] = {NULL};
-        char *argHolder[sizeof(&line) + 1] = {NULL};
-        char **argArr[10] = {NULL}; // probably change the 10
-        int arrCnt = 0;
-        while ((arg[j] = strsep(&line, " \t")) != NULL) {
-            arrCnt = parHandle(arg, argArr, arrCnt, argHolder, j);
-            j++;
-        }
-        int arrIndex = 0;
-        while (argArr[arrIndex] != NULL) {
-            if (argArr[arrIndex][0] != NULL) {
-                bool isExternal = true;
-                int argNum = j;
-                if (strcmp(argArr[arrIndex][0], "exit") == 0) {
-                    isExternal = false;
-                    exitWish(argArr[arrIndex]);
-                }
-                if (strcmp(argArr[arrIndex][0], "cd") == 0) {
-                    isExternal = false;
-                    cd(argArr[arrIndex]);
-                }
-                if (strcmp(argArr[arrIndex][0], "path") == 0) {
-                    isExternal = false;
-                    pathList = path(argArr[arrIndex], argNum, pathList);
-                }
-                if (isExternal == true && strcmp(argArr[arrIndex][0], "&") != 0) {
-                    external(argArr[arrIndex], pathList);
+        int argNum = j;
+        if (arrCnt > 1) {
+            for (int arrIndex = 0; arrIndex < arrCnt; arrIndex++) {
+                pid = fork();
+                if (pid == 0) {
+                    int i = arrIndex;
+                    if (argArr[i] != NULL) {
+                        if (argArr[i][0] != NULL) {
+                            bool isExternal = true;
+
+                            if (strcmp(argArr[i][0], "exit") == 0) {
+                                isExternal = false;
+                                exitWish(argArr[i]);
+                            }
+                            if (strcmp(argArr[i][0], "cd") == 0) {
+                                isExternal = false;
+                                cd(argArr[i]);
+                            }
+                            if (strcmp(argArr[i][0], "path") == 0) {
+                                isExternal = false;
+                                pathList = path(argArr[i], argNum, pathList);
+                            }
+                            if (isExternal == true && strcmp(argArr[i][0], "&") != 0) {
+                                external(argArr[i], pathList);
+                            }
+                        }
+                    }
+                    if (strcmp(argArr[i][0], "path") != 0)
+                        exit(EXIT_SUCCESS);
                 }
             }
-            arrIndex++;
         }
+        for (int arrIndex = 0; arrIndex < arrCnt; arrIndex++) {
+            wait(NULL);
+        }
+         if (argArr[0][0] != NULL && arrCnt == 1) {
+             bool isExternal = true;
+
+             if (strcmp(argArr[0][0], "exit") == 0) {
+                 isExternal = false;
+                 exitWish(argArr[0]);
+             }
+             if (strcmp(argArr[0][0], "cd") == 0) {
+                 isExternal = false;
+                 cd(argArr[0]);
+             }
+             if (strcmp(argArr[0][0], "path") == 0) {
+                 isExternal = false;
+                 pathList = path(argArr[0], argNum, pathList);
+             }
+             if (isExternal == true && strcmp(argArr[0][0], "&") != 0) {
+                 external(argArr[0], pathList);
+             }
+         }
         lpCnt++;
     }
 }
