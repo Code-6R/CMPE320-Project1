@@ -6,8 +6,7 @@
 #include <sys/wait.h>
 
 int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j) {
-    if (strcmp(arg[j], "&") == 0 && j != 0) {
-        // used for space case
+    if (strcmp(arg[j], "&") == 0 && j != 0) { // used for space case
         arg[j] = NULL;
         argArr[arrCnt] = &arg[j + 1];
         arrCnt++;
@@ -15,8 +14,7 @@ int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j
     int k = 0;
     if (arrCnt == 0) {
         char *parSym = NULL;
-        while ((parSym = strchr(arg[j], '&')) != NULL) {
-            // used for no space case
+        while ((parSym = strchr(arg[j], '&')) != NULL) { // used for no space case
             argHolder[k] = strndup(arg[j], strlen(arg[j]) - strlen(parSym));
             strsep(&parSym, "&");
             arg[j] = parSym;
@@ -28,12 +26,11 @@ int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j
                 argArr[arrCnt] = &argHolder[arrCnt];
         }
     }
-    if (arrCnt == 0 && k == 0) {
-        // used for single command case
+    if (arrCnt == 0 && k == 0) { // used for single command case
         argArr[0] = &arg[0];
         arrCnt = 1;
     }
-    return arrCnt; // I thought this was better than making it a global variable
+    return arrCnt; // I think this is better than making it a global variable
 }
 
 char **cmdRunner(char **argArr[], char *pathList[], int argNum, int index) {
@@ -59,8 +56,7 @@ char **cmdRunner(char **argArr[], char *pathList[], int argNum, int index) {
 }
 
 int main(int argc, char *argv[]) {
-    int lpCnt = 1; // set to 1 since 0 contains the
-    // user, device name, and current directory
+    int lpCnt = 1; // set to 1 since 0 contains data we don't need
     char *line = NULL;
     size_t size = 0;
     FILE *stream = NULL;
@@ -68,7 +64,7 @@ int main(int argc, char *argv[]) {
     pathList[0] = "/bin";
     pid_t pid = 1;
     int arrCnt = 0;
-    char **argArr[10] = {NULL}; // probably change the 10
+    char **argArr[10] = {NULL}; // the 10 is arbitrary
     int j = 0;
     if (argc != 2 && argc != 1) {
         printErr();
