@@ -15,7 +15,6 @@ int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j
     }
     int k = 0;
     if (parSpace == false) {
-        if (arrCnt == 1) {}
         char *parSym = NULL;
         while ((parSym = strchr(arg[j], '&')) != NULL) { // used for no space case
             argHolder[k] = strndup(arg[j], strlen(arg[j]) - strlen(parSym));
