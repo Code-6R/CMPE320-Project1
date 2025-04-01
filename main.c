@@ -6,7 +6,8 @@
 #include <sys/wait.h>
 
 int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j) {
-    if (strcmp(arg[j], "&") == 0 && j != 0) { // used for space case
+    if (strcmp(arg[j], "&") == 0 && j != 0) {
+        // used for space case
         arg[j] = NULL;
         argArr[arrCnt] = &arg[j + 1];
         arrCnt++;
@@ -14,7 +15,8 @@ int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j
     int k = 0;
     if (arrCnt == 0) {
         char *parSym = NULL;
-        while ((parSym = strchr(arg[j], '&')) != NULL) { // used for no space case
+        while ((parSym = strchr(arg[j], '&')) != NULL) {
+            // used for no space case
             argHolder[k] = strndup(arg[j], strlen(arg[j]) - strlen(parSym));
             strsep(&parSym, "&");
             arg[j] = parSym;
@@ -26,11 +28,34 @@ int parHandle(char *arg[], char **argArr[], int arrCnt, char *argHolder[], int j
                 argArr[arrCnt] = &argHolder[arrCnt];
         }
     }
-    if (arrCnt == 0 && k == 0) { // used for single command case
+    if (arrCnt == 0 && k == 0) {
+        // used for single command case
         argArr[0] = &arg[0];
         arrCnt = 1;
     }
     return arrCnt; // I thought this was better than making it a global variable
+}
+
+char **cmdRunner(char **argArr[], char *pathList[], int argNum, int index) {
+    if (argArr[index][0] != NULL) {
+        bool isExternal = true;
+        if (strcmp(argArr[index][0], "exit") == 0) {
+            isExternal = false;
+            exitWish(argArr[index]);
+        }
+        if (strcmp(argArr[index][0], "cd") == 0) {
+            isExternal = false;
+            cd(argArr[index]);
+        }
+        if (strcmp(argArr[index][0], "path") == 0) {
+            isExternal = false;
+            pathList = path(argArr[index], argNum, pathList);
+        }
+        if (isExternal == true && strcmp(argArr[index][0], "&") != 0) {
+            external(argArr[index], pathList);
+        }
+    }
+    return pathList; //
 }
 
 int main(int argc, char *argv[]) {
@@ -85,29 +110,11 @@ int main(int argc, char *argv[]) {
             for (int arrIndex = 0; arrIndex < arrCnt; arrIndex++) {
                 pid = fork();
                 if (pid == 0) {
-                    int i = arrIndex;
-                    if (argArr[i] != NULL) {
-                        if (argArr[i][0] != NULL) {
-                            bool isExternal = true;
-
-                            if (strcmp(argArr[i][0], "exit") == 0) {
-                                isExternal = false;
-                                exitWish(argArr[i]);
-                            }
-                            if (strcmp(argArr[i][0], "cd") == 0) {
-                                isExternal = false;
-                                cd(argArr[i]);
-                            }
-                            if (strcmp(argArr[i][0], "path") == 0) {
-                                isExternal = false;
-                                pathList = path(argArr[i], argNum, pathList);
-                            }
-                            if (isExternal == true && strcmp(argArr[i][0], "&") != 0) {
-                                external(argArr[i], pathList);
-                            }
-                        }
+                    int index = arrIndex;
+                    if (argArr[index] != NULL) {
+                        pathList = cmdRunner(argArr, pathList, argNum, index);
                     }
-                    if (strcmp(argArr[i][0], "path") != 0)
+                    if (strcmp(argArr[index][0], "path") != 0)
                         exit(EXIT_SUCCESS);
                 }
             }
@@ -115,25 +122,9 @@ int main(int argc, char *argv[]) {
         for (int arrIndex = 0; arrIndex < arrCnt; arrIndex++) {
             wait(NULL);
         }
-         if (argArr[0][0] != NULL && arrCnt == 1) {
-             bool isExternal = true;
-
-             if (strcmp(argArr[0][0], "exit") == 0) {
-                 isExternal = false;
-                 exitWish(argArr[0]);
-             }
-             if (strcmp(argArr[0][0], "cd") == 0) {
-                 isExternal = false;
-                 cd(argArr[0]);
-             }
-             if (strcmp(argArr[0][0], "path") == 0) {
-                 isExternal = false;
-                 pathList = path(argArr[0], argNum, pathList);
-             }
-             if (isExternal == true && strcmp(argArr[0][0], "&") != 0) {
-                 external(argArr[0], pathList);
-             }
-         }
+        if (argArr[0][0] != NULL && arrCnt == 1) {
+            pathList = cmdRunner(argArr, pathList, argNum, 0);
+        }
         lpCnt++;
     }
 }
