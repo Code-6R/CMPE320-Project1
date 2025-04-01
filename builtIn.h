@@ -11,6 +11,7 @@ typedef struct {
     bool valid;
 } sym_t;
 
+void printErr();
 int cd(char *arg[]);
 char **path(char *arg[], int argNum, char **pathList);
 int *external(char *arg[], char **pathList);
